@@ -437,7 +437,7 @@
 "use strict";
 
 /* ============================================================
-   BRAND TOKENS — pulled from hokaistore.web.app's stylesheet
+   BRAND TOKENS — pulled from hokaistore.com's stylesheet
    ============================================================ */
 var SCHEMES = {
   surge: {name:"Violet Surge", sub:"default",     a:"#8B5CF6", b:"#06B6D4", c:"#EC4899"},
@@ -466,7 +466,7 @@ var TEMPLATES = {
     scheme:"surge",
     copy:{eyebrow:"LEAK", index:"NO. 01", title:"NEW LEGEND SKIN\n*DROPPING SOON*",
       sub:"Simpan diamond anda dari sekarang.", metaA:"COMING SOON", metaB:"ADVANCE SERVER",
-      tags:"MLBB,DIAMOND TOP-UP", cta:"TOP UP AWAL DI HOKAISTORE.WEB.APP",
+      tags:"MLBB,DIAMOND TOP-UP", cta:"TOP UP AWAL DI HOKAISTORE.COM",
       ticker:"INSTANT DELIVERY / HARGA TERMURAH / 24 JAM / KAICASH BONUS"}
   },
   price: {
@@ -475,7 +475,7 @@ var TEMPLATES = {
     scheme:"ice",
     copy:{eyebrow:"TERMURAH", index:"NO. 02", title:"86 DIAMONDS\n*MLBB*",
       sub:"Bayar kurang, dapat sama banyak.", metaA:"RM 25.00", metaB:"RM 19.90",
-      tags:"MLBB,INSTANT,LEGIT", cta:"BELI SEKARANG DI HOKAISTORE.WEB.APP",
+      tags:"MLBB,INSTANT,LEGIT", cta:"BELI SEKARANG DI HOKAISTORE.COM",
       ticker:"MLBB / PUBG UC / FREE FIRE / GENSHIN / VALORANT / ROBLOX"}
   },
   kaicash: {
@@ -484,7 +484,7 @@ var TEMPLATES = {
     scheme:"cash",
     copy:{eyebrow:"DEPOSIT", index:"NO. 03", title:"TOP UP RM50\n*DAPAT RM55*",
       sub:"Bonus masuk terus ke wallet Kaicash anda.", metaA:"+10%", metaB:"MIN. RM50",
-      tags:"KAICASH,WALLET", cta:"DEPOSIT DI HOKAISTORE.WEB.APP",
+      tags:"KAICASH,WALLET", cta:"DEPOSIT DI HOKAISTORE.COM",
       ticker:"BONUS BULAN INI / KREDIT SERTA-MERTA / GUNA UNTUK SEMUA GAME"}
   },
   boost: {
@@ -493,7 +493,7 @@ var TEMPLATES = {
     scheme:"pulse",
     copy:{eyebrow:"BOOST", index:"NO. 04", title:"DARI 1K KE 50K\n*30 HARI*",
       sub:"Followers, likes dan views yang selamat.", metaA:"1,204", metaB:"58,900",
-      tags:"TIKTOK,INSTAGRAM", cta:"BOOST SEKARANG DI HOKAISTORE.WEB.APP",
+      tags:"TIKTOK,INSTAGRAM", cta:"BOOST SEKARANG DI HOKAISTORE.COM",
       ticker:"SECURE DELIVERY / NO PASSWORD NEEDED / DRIP FEED AVAILABLE"}
   },
   review: {
@@ -503,7 +503,7 @@ var TEMPLATES = {
     copy:{eyebrow:"REVIEW", index:"NO. 05", title:"DIAMOND MASUK\nDALAM *40 SAAT*",
       sub:"Ratusan order setiap minggu, rating kekal 5 bintang.",
       metaA:"@aiman.my", metaB:"VERIFIED PURCHASE",
-      tags:"5 STAR,REAL ORDER", cta:"BACA REVIEW DI HOKAISTORE.WEB.APP",
+      tags:"5 STAR,REAL ORDER", cta:"BACA REVIEW DI HOKAISTORE.COM",
       ticker:"RATED 5.0 / RATUSAN ORDER SEMINGGU / REFUND KALAU GAGAL"}
   },
   feedback: {
@@ -519,7 +519,7 @@ var TEMPLATES = {
               "AJIM | boost like luu | Malaysia | 5\n" +
               "FANZ | ini kali ke 10 sy boost like Tiktok kt sini | Malaysia | 5\n" +
               "BOLIV | Mantap | Malaysia | 5",
-      tags:"VERIFIED,REAL ORDER", cta:"BACA SEMUA REVIEW DI HOKAISTORE.WEB.APP",
+      tags:"VERIFIED,REAL ORDER", cta:"BACA SEMUA REVIEW DI HOKAISTORE.COM",
       ticker:"98% TRUST INDEX / 13 VERIFIED REVIEWS / REFUND KALAU GAGAL"}
   },
   flash: {
@@ -528,7 +528,7 @@ var TEMPLATES = {
     scheme:"pulse",
     copy:{eyebrow:"FLASH", index:"NO. 06", title:"DISKAUN\n*HUJUNG MINGGU*",
       sub:"Guna kod HOKAI10 masa checkout.", metaA:"-35%", metaB:"02 14 59",
-      tags:"KOD HOKAI10,SEMUA GAME", cta:"GUNA KOD HOKAI10 DI HOKAISTORE.WEB.APP",
+      tags:"KOD HOKAI10,SEMUA GAME", cta:"GUNA KOD HOKAI10 DI HOKAISTORE.COM",
       ticker:"TAMAT AHAD 11:59 MALAM / SEMUA GAME / SEMUA SOCMED SERVICE"}
   }
 };
@@ -560,55 +560,55 @@ var DECKS = [];
       label:"Skin leak — "+HEROES[i], kind:"Leak", tpl:"leak",
       copy:{eyebrow:"LEAK", index:no(i), title:"SKIN LEAK\n*"+HEROES[i]+"*", sub:leakSubs[i],
         metaA:"COMING SOON", metaB:"ADVANCE SERVER", tags:"MLBB,DIAMOND TOP-UP",
-        cta:"TOP UP AWAL DI HOKAISTORE.WEB.APP",
+        cta:"TOP UP AWAL DI HOKAISTORE.COM",
         ticker:"INSTANT DELIVERY / HARGA TERMURAH / 24 JAM / KAICASH BONUS"}
     });
   }
   DECKS.push({label:"Diamond price beat", kind:"Price", tpl:"price", copy:{
     eyebrow:"TERMURAH", index:no(12), title:"86 DIAMONDS\n*MLBB*", sub:"Bayar kurang, dapat sama banyak.",
     metaA:"RM 25.00", metaB:"RM 19.90", tags:"MLBB,INSTANT,LEGIT",
-    cta:"BELI SEKARANG DI HOKAISTORE.WEB.APP",
+    cta:"BELI SEKARANG DI HOKAISTORE.COM",
     ticker:"MLBB / PUBG UC / FREE FIRE / GENSHIN / VALORANT / ROBLOX"}});
   DECKS.push({label:"PUBG UC price beat", kind:"Price", tpl:"price", copy:{
     eyebrow:"TERMURAH", index:no(13), title:"660 UC\n*PUBG MOBILE*", sub:"Terus masuk ID, tak payah tunggu.",
     metaA:"RM 42.00", metaB:"RM 34.90", tags:"PUBG,UC,INSTANT",
-    cta:"BELI SEKARANG DI HOKAISTORE.WEB.APP",
+    cta:"BELI SEKARANG DI HOKAISTORE.COM",
     ticker:"PUBG UC / MLBB DIAMONDS / FREE FIRE / SEMUA INSTANT"}});
   DECKS.push({label:"Kaicash deposit bonus", kind:"Promo", tpl:"kaicash", copy:{
     eyebrow:"DEPOSIT", index:no(14), title:"TOP UP RM50\n*DAPAT RM55*",
     sub:"Bonus masuk terus ke wallet Kaicash anda.",
     metaA:"+10%", metaB:"MIN. RM50", tags:"KAICASH,WALLET",
-    cta:"DEPOSIT DI HOKAISTORE.WEB.APP",
+    cta:"DEPOSIT DI HOKAISTORE.COM",
     ticker:"BONUS BULAN INI / KREDIT SERTA-MERTA / GUNA UNTUK SEMUA GAME"}});
   DECKS.push({label:"Win-back RM5 credit", kind:"Promo", tpl:"kaicash", copy:{
     eyebrow:"KEMBALI", index:no(15), title:"KAMI RINDU ANDA\n*RM5 KAICASH*",
     sub:"Kredit percuma untuk order seterusnya.",
     metaA:"+RM5", metaB:"TAMAT 7 HARI", tags:"KAICASH,PERCUMA",
-    cta:"CLAIM DI HOKAISTORE.WEB.APP",
+    cta:"CLAIM DI HOKAISTORE.COM",
     ticker:"KREDIT PERCUMA / TIADA SYARAT TERSEMBUNYI / GUNA BILA-BILA"}});
   DECKS.push({label:"TikTok boost transform", kind:"Socmed", tpl:"boost", copy:{
     eyebrow:"BOOST", index:no(16), title:"DARI 1K KE 50K\n*30 HARI*",
     sub:"Likes dan views yang selamat untuk brand anda.",
     metaA:"1,204", metaB:"58,900", tags:"TIKTOK,LIKES,VIEWS",
-    cta:"BOOST SEKARANG DI HOKAISTORE.WEB.APP",
+    cta:"BOOST SEKARANG DI HOKAISTORE.COM",
     ticker:"SECURE DELIVERY / NO PASSWORD NEEDED / DRIP FEED AVAILABLE"}});
   DECKS.push({label:"IG follower transform", kind:"Socmed", tpl:"boost", copy:{
     eyebrow:"BOOST", index:no(17), title:"PROFIL KOSONG\nJADI *PROFESIONAL*",
     sub:"Sesuai untuk kedai online dan brand deal.",
     metaA:"310", metaB:"12,400", tags:"INSTAGRAM,FOLLOWERS",
-    cta:"BOOST SEKARANG DI HOKAISTORE.WEB.APP",
+    cta:"BOOST SEKARANG DI HOKAISTORE.COM",
     ticker:"REAL LOOKING PROFILES / REFILL GUARANTEE / SUPPORT 24 JAM"}});
   DECKS.push({label:"5-star review proof", kind:"UGC", tpl:"review", copy:{
     eyebrow:"REVIEW", index:no(18), title:"DIAMOND MASUK\nDALAM *40 SAAT*",
     sub:"Ratusan order setiap minggu, rating kekal 5 bintang.",
     metaA:"@aiman.my", metaB:"VERIFIED PURCHASE", tags:"5 STAR,REAL ORDER",
-    cta:"BACA REVIEW DI HOKAISTORE.WEB.APP",
+    cta:"BACA REVIEW DI HOKAISTORE.COM",
     ticker:"RATED 5.0 / RATUSAN ORDER SEMINGGU / REFUND KALAU GAGAL"}});
   DECKS.push({label:"Speed test proof", kind:"UGC", tpl:"review", copy:{
     eyebrow:"SPEED TEST", index:no(19), title:"TIMER START\nSAMPAI *1 MINIT*",
     sub:"Rakam sendiri, tiada edit, tiada tipu.",
     metaA:"@hokai.customer", metaB:"LIVE ORDER", tags:"SPEED TEST,REAL",
-    cta:"CUBA SENDIRI DI HOKAISTORE.WEB.APP",
+    cta:"CUBA SENDIRI DI HOKAISTORE.COM",
     ticker:"PURATA DELIVERY BAWAH 1 MINIT / AUTO SYSTEM / 24 JAM"}});
   DECKS.push({label:"Feedback section", kind:"UGC", tpl:"feedback",
     copy: Object.assign({}, TEMPLATES.feedback.copy, {index:"NO. 21"})});
@@ -620,7 +620,7 @@ var DECKS = [];
     cardLine:"[ terus masuk ID, tak payah tunggu ]",
     sub:"", metaA:"+60 11-2345 6789", metaB:"@hokaistore",
     tags:"*Top Up* Laju, *Harga* Jujur, Main Terus.",
-    cta:"hokaistore.web.app",
+    cta:"hokaistore.com",
     ticker:"INSTANT DELIVERY / HARGA TERMURAH / 24 JAM"}});
   DECKS.push({label:"Relatable — harga kedai lain", kind:"Relatable", tpl:"price", style:"sticker", copy:{
     eyebrow:"Jimat!", index:"NO. 25",
@@ -629,19 +629,19 @@ var DECKS = [];
     cardLine:"[ murah tiap hari, bukan masa promo je ]",
     sub:"", metaA:"+60 11-2345 6789", metaB:"@hokaistore",
     tags:"*Murah* Setiap Hari, Bukan *Promo* Je.",
-    cta:"hokaistore.web.app",
+    cta:"hokaistore.com",
     ticker:"MLBB / PUBG UC / FREE FIRE / SEMUA INSTANT"}});
   DECKS.push({label:"Weekend flash sale", kind:"Event", tpl:"flash", copy:{
     eyebrow:"FLASH", index:"NO. 22", title:"DISKAUN\n*HUJUNG MINGGU*",
     sub:"Guna kod HOKAI10 masa checkout.",
     metaA:"-35%", metaB:"02 14 59", tags:"KOD HOKAI10,SEMUA GAME",
-    cta:"GUNA KOD HOKAI10 DI HOKAISTORE.WEB.APP",
+    cta:"GUNA KOD HOKAI10 DI HOKAISTORE.COM",
     ticker:"TAMAT AHAD 11:59 MALAM / SEMUA GAME / SEMUA SOCMED SERVICE"}});
   DECKS.push({label:"Tournament tie-in", kind:"Event", tpl:"flash", copy:{
     eyebrow:"SEASON", index:"NO. 23", title:"SEASON BARU\n*STOCK DIAMOND*",
     sub:"Rank push start malam ni. Siap sedia.",
     metaA:"-20%", metaB:"72 00 00", tags:"SEASON,RANK PUSH",
-    cta:"TOP UP SEKARANG DI HOKAISTORE.WEB.APP",
+    cta:"TOP UP SEKARANG DI HOKAISTORE.COM",
     ticker:"SEASON BARU / RANK PUSH / DIAMOND SENTIASA READY"}});
 })();
 
@@ -1685,7 +1685,7 @@ function drawRail(d){
   c.translate(RAIL_X, bottom);
   c.rotate(-Math.PI/2);
   c.font = "700 13px 'JetBrains Mono', monospace";
-  var label = "HOKAISTORE.WEB.APP";
+  var label = "HOKAISTORE.COM";
   w = trackedWidth(c, label, 3.6);
   if(bottom - w > topLimit){
     shown = true;
@@ -2299,7 +2299,7 @@ function drawBookend(c, W, H, S, p, dir){
     c.globalAlpha = cover * tail;
     c.font = "500 " + Math.round(W*0.0215) + "px Outfit, Inter, sans-serif";
     c.fillStyle = "rgba(255,255,255,.72)";
-    var t2 = "hokaistore.web.app";
+    var t2 = "hokaistore.com";
     var tw = trackedWidth(c, t2, 3.2);
     tracked(c, t2, W/2 - tw/2, H*0.50 + W*0.062, 3.2, "left");
   }
