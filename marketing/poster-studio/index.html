@@ -1057,6 +1057,19 @@ function fivePointStar(c, cx, cy, r, rot, fill, line){
 }
 
 /* the hand-drawn route: little crosses wandering across the sheet */
+/* Every sticker animation is a function of one looping phase, so a clip
+   of any length rejoins itself without a jump. Recording retimes the
+   period to divide evenly into the clip. */
+var stickerPeriod = 3.2;
+function phase(t, off){
+  var u = (t / stickerPeriod + (off || 0)) % 1;
+  return u < 0 ? u + 1 : u;
+}
+function wrapDist(a, b){
+  var d = Math.abs(a - b);
+  return Math.min(d, 1 - d);
+}
+
 function dottedTrail(c, W, H, t){
   var pts = [], i;
   for(i = 0; i <= 180; i++){
@@ -1070,16 +1083,19 @@ function dottedTrail(c, W, H, t){
   c.save();
   c.lineWidth = 1.4;
   c.lineCap = "round";
+  var head = moving ? phase(t, 0) : -1;        /* a pulse running the route */
   for(i = 0; i < pts.length; i += 3){
     var p = pts[i];
+    var mu = i / (pts.length - 1);
+    var lift = head < 0 ? 0 : Math.exp(-Math.pow(wrapDist(mu, head)/0.075, 2));
     /* a loose band two marks deep, thinning at the edges */
     var depth = 2;
     for(var k = -depth; k <= depth; k++){
       var jx = Math.sin(i*1.7 + k*2.3)*5.0;
       var jy = k*13 + Math.cos(i*1.3 + k*1.1)*4.0;
       var fade = 1 - Math.abs(k)/(depth + 1);
-      c.strokeStyle = "rgba(255,255,255," + (0.05 + fade*0.13) + ")";
-      var s = 2.2 + fade*1.1, x = p[0] + jx, y = p[1] + jy;
+      c.strokeStyle = "rgba(255,255,255," + (0.05 + fade*0.13 + lift*0.55*fade) + ")";
+      var s = 2.2 + fade*1.1 + lift*2.6*fade, x = p[0] + jx, y = p[1] + jy;
       c.beginPath();
       c.moveTo(x - s, y - s); c.lineTo(x + s, y + s);
       c.moveTo(x + s, y - s); c.lineTo(x - s, y + s);
@@ -1178,7 +1194,8 @@ function renderSticker(c, W, H, S, sz, t){
     var wa = trackedWidth(c, a, 1.6);
     tracked(c, a, M, y, 1.6, "left");
     var starX = M + wa + size*0.62;
-    fivePointStar(c, starX, y - size*0.34, size*0.50, 8, "#A5B4FC", null);
+    var bs = size*0.50 * (moving ? 1 + 0.16*Math.sin(phase(t, 0.5) * Math.PI * 2) : 1);
+    fivePointStar(c, starX, y - size*0.34, bs, 8 + (moving ? 10*Math.sin(phase(t, 0.5)*Math.PI*2) : 0), "#A5B4FC", null);
     tracked(c, b, starX + size*0.56, y, 1.6, "left");
     var wb = trackedWidth(c, b, 1.6);
 
@@ -1223,10 +1240,20 @@ function renderSticker(c, W, H, S, sz, t){
     return stickerWindow(d, cardX, cardY, cw);
   });
 
-  /* ---------- scattered stars, over everything but the contacts ---------- */
+  /* ---------- scattered stars: each breathes and twinkles on its own beat ---------- */
   STAR_FIELD.forEach(function(s, i){
-    fivePointStar(c, W*s[0], H*s[1], s[2] * (W/1080), s[3],
+    var r = s[2] * (W/1080), rot = s[3], a = 1;
+    if(moving){
+      var u = phase(t, i * 0.13);
+      r *= 1 + 0.20 * Math.sin(u * Math.PI * 2);
+      rot += 9 * Math.sin(phase(t, i * 0.21) * Math.PI * 2);
+      a = 0.72 + 0.28 * (0.5 + 0.5 * Math.sin(phase(t, i * 0.37) * Math.PI * 4));
+    }
+    c.save();
+    c.globalAlpha = a;
+    fivePointStar(c, W*s[0], H*s[1], r, rot,
                   STICKER.stars[i % STICKER.stars.length], "rgba(10,10,20,.35)");
+    c.restore();
   });
 
   /* ---------- contact strip ---------- */
@@ -1263,12 +1290,15 @@ function stickerWindow(d, x, y, w){
   var myOff   = bigEnd + 56*k;
   var markEnd = myOff + (markLines.length - 1) * (lineSize*1.32);
   var h = markEnd + lineSize*0.34 + pad*0.80;
+  /* the whole card drifts a little, and everything pinned to it comes along */
+  var float = moving ? 5*k * Math.sin(phase(d.t, 0) * Math.PI * 2) : 0;
+  y += float;
 
-  /* folder tab, tucked behind the top right */
+  /* folder tab, tucked behind the top right — it rocks on the card's beat */
   var fw = 150*k, fh = 118*k, fx = x + w - fw*1.05, fy = y - fh*0.52;
   c.save();
   c.translate(fx + fw/2, fy + fh/2);
-  c.rotate(3 * Math.PI/180);
+  c.rotate((3 + (moving ? 2.6 * Math.sin(phase(d.t, 0.18) * Math.PI * 2) : 0)) * Math.PI/180);
   c.shadowColor = "rgba(0,0,0,.30)"; c.shadowBlur = 26*k; c.shadowOffsetY = 10*k;
   c.fillStyle = STICKER.folder;
   rrect(c, -fw/2, -fh/2 + 14*k, fw, fh - 14*k, 14*k); c.fill();
@@ -1285,12 +1315,18 @@ function stickerWindow(d, x, y, w){
   rrect(c, x, y, w, h, 34*k); c.fill();
   c.restore();
 
-  /* the three window dots */
+  /* the three window dots, lighting in turn */
   STICKER.dots.forEach(function(col, i){
+    var pulse = moving
+      ? 0.72 + 0.28 * (0.5 + 0.5 * Math.cos((phase(d.t, -i*0.14)) * Math.PI * 2))
+      : 1;
+    c.save();
+    c.globalAlpha = pulse;
     c.fillStyle = col;
     c.beginPath();
-    c.arc(x + pad*0.74 + i*(26*k), y + 42*k, 9.5*k, 0, Math.PI*2);
+    c.arc(x + pad*0.74 + i*(26*k), y + 42*k, 9.5*k * (0.9 + pulse*0.1), 0, Math.PI*2);
     c.fill();
+    c.restore();
   });
 
   /* the big line */
@@ -1307,8 +1343,22 @@ function stickerWindow(d, x, y, w){
   markLines.forEach(function(l, i){
     var lw = c.measureText(l).width;
     var ly = my + i*(lineSize*1.32);
+    var mx = x + pad - 8*k, mw = lw + 16*k, mh = lineSize*1.08, mty = ly - lineSize*0.80;
     c.fillStyle = STICKER.mark;
-    c.fillRect(x + pad - 8*k, ly - lineSize*0.80, lw + 16*k, lineSize*1.08);
+    c.fillRect(mx, mty, mw, mh);
+    /* a gloss runs along the marker — travels, so the loop is seamless */
+    if(moving){
+      var u = phase(d.t, -i*0.12);
+      var gx = mx - mw*0.35 + u * (mw * 1.7);
+      var gl = c.createLinearGradient(gx - mw*0.22, 0, gx + mw*0.22, 0);
+      gl.addColorStop(0, "rgba(255,255,255,0)");
+      gl.addColorStop(.5, "rgba(255,255,255,.55)");
+      gl.addColorStop(1, "rgba(255,255,255,0)");
+      c.save();
+      c.beginPath(); c.rect(mx, mty, mw, mh); c.clip();
+      c.fillStyle = gl; c.fillRect(mx, mty, mw, mh);
+      c.restore();
+    }
     c.fillStyle = STICKER.markInk;
     c.fillText(l, x + pad, ly);
   });
@@ -1321,7 +1371,9 @@ function stickerWindow(d, x, y, w){
     var bw = c.measureText(badge).width + 56*k, bh = bs*1.72;
     c.save();
     c.translate(x - 22*k, y + h - bh*0.42);
-    c.rotate(-3 * Math.PI/180);
+    c.rotate((-3 + (moving ? 2.2 * Math.sin(phase(d.t, 0.33) * Math.PI * 2) : 0)) * Math.PI/180);
+    var pop = moving ? 1 + 0.05 * Math.sin(phase(d.t, 0.33) * Math.PI * 4) : 1;
+    c.scale(pop, pop);
     c.shadowColor = "rgba(0,0,0,.35)"; c.shadowBlur = 24*k; c.shadowOffsetY = 8*k;
     c.fillStyle = STICKER.badge;
     rrect(c, 0, 0, bw, bh, bh/2); c.fill();
@@ -1333,12 +1385,32 @@ function stickerWindow(d, x, y, w){
     c.restore();
   }
 
-  /* the cursor, nudging the card's bottom right corner */
+  /* the cursor drifts toward the card and clicks once each loop */
   var curX = x + w - 16*k, curY = y + h - 44*k;
-  var bob = moving ? Math.sin(d.t*2.2) * 4*k : 0;
+  var press = 1, ring = -1, dx = 0, dy = 0;
+  if(moving){
+    var u = phase(d.t, 0);
+    dx = 26*k * Math.sin(u * Math.PI * 2 + 0.7);
+    dy = 14*k * Math.sin(u * Math.PI * 4);
+    /* a smooth dip at the same point every loop, wrapped so it never jumps */
+    var hit = wrapDist(u, 0.62);
+    press = 1 - 0.14 * Math.exp(-Math.pow(hit/0.05, 2));
+    if(u > 0.62 && u < 0.92) ring = (u - 0.62) / 0.30;
+  }
+  if(ring >= 0){
+    c.save();
+    c.globalAlpha = (1 - ring) * 0.55;
+    c.strokeStyle = "#FFFFFF";
+    c.lineWidth = 3.5*k * (1 - ring) + 1;
+    c.beginPath();
+    c.arc(curX + dx + 6*k, curY + dy + 10*k, 12*k + ring * 46*k, 0, Math.PI*2);
+    c.stroke();
+    c.restore();
+  }
   c.save();
-  c.translate(curX, curY + bob);
+  c.translate(curX + dx, curY + dy);
   c.rotate(14 * Math.PI/180);
+  c.scale(press, press);
   c.beginPath();
   c.moveTo(0, 0);
   c.lineTo(0, 62*k);
@@ -2253,6 +2325,9 @@ function recordVideo(dur, onProgress){
     }
     var c2 = cv.getContext("2d");
     var wasMoving = moving, prevSpeed = tickerSpeed, wasChrome = chrome;
+    var prevPeriod = stickerPeriod;
+    /* a whole number of sticker loops inside the clip, so it rejoins itself */
+    stickerPeriod = dur / Math.max(1, Math.round(dur / 3.2));
 
     /* a clip in the background starts from its own first frame */
     if(isVideo(state.img)){
@@ -2266,7 +2341,8 @@ function recordVideo(dur, onProgress){
     var uw = lastUW || 900;
     tickerSpeed = uw * Math.max(1, Math.round(90*dur/uw)) / dur;
 
-    function restore(){ moving = wasMoving; tickerSpeed = prevSpeed; chrome = wasChrome; }
+    function restore(){ moving = wasMoving; tickerSpeed = prevSpeed; chrome = wasChrome;
+                        stickerPeriod = prevPeriod; }
 
     var stream = cv.captureStream(30), rec;
     try{
