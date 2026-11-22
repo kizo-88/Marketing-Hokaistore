@@ -352,6 +352,26 @@
         <label for="f-ticker" id="l-ticker">Bottom ticker</label>
         <input type="text" id="f-ticker" maxlength="150">
       </div>
+      <div class="field">
+        <label for="f-caption">Post caption</label>
+        <textarea id="f-caption" rows="3" maxlength="2000"></textarea>
+        <p class="note" style="margin-top:6px">What goes in the caption box on IG, FB and TikTok. Leave it blank and the export writes one from the poster.</p>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h2>Posting plan</h2>
+      <div class="pills" id="perday"></div>
+      <div class="field" style="margin-top:12px">
+        <label for="f-start">First post date</label>
+        <input type="date" id="f-start">
+      </div>
+      <div class="toggles">
+        <label class="tog"><input type="checkbox" id="p-ig" checked> Instagram</label>
+        <label class="tog"><input type="checkbox" id="p-fb" checked> Facebook</label>
+        <label class="tog"><input type="checkbox" id="p-tt" checked> TikTok</label>
+      </div>
+      <p class="note" id="planNote">Export queue writes the posters plus a schedule you can work through in Meta Business Suite and TikTok Studio.</p>
     </div>
 
     <div class="grp">
@@ -653,7 +673,7 @@ var state = {
   copy: Object.assign({}, TEMPLATES.leak.copy),
   zoom:100, panX:0, panY:0,
   motion:true, grain:true, scan:true, logo:true,
-  style:"sheet", bg:"panel", fade:34, bookend:true,
+  style:"sheet", bg:"panel", fade:34, bookend:true, perDay:1,
   layout:{}, sel:null,
   img:null, queue:[], active:-1, vidDur:6
 };
@@ -2822,6 +2842,36 @@ document.getElementById("btnPlaySeq").addEventListener("click", function(){
   say("Playing the clip through, intro and outro included.");
 });
 
+/* posts per day */
+var PER_DAY = [
+  {k:1, name:"1 / day", sub:"20:00"},
+  {k:2, name:"2 / day", sub:"12:30, 20:00"},
+  {k:3, name:"3 / day", sub:"12:30, 18:00, 21:30"}
+];
+var perDayWrap = document.getElementById("perday");
+PER_DAY.forEach(function(p){
+  var b = document.createElement("button");
+  b.type = "button"; b.className = "pill"; b.dataset.k = p.k;
+  b.setAttribute("aria-pressed", p.k === state.perDay);
+  b.innerHTML = "<span></span><small></small>";
+  b.querySelector("span").textContent = p.name;
+  b.querySelector("small").textContent = p.sub;
+  b.addEventListener("click", function(){
+    state.perDay = p.k;
+    Array.prototype.forEach.call(perDayWrap.children, function(x){
+      x.setAttribute("aria-pressed", +x.dataset.k === state.perDay);
+    });
+    needsDraw = true;
+  });
+  perDayWrap.appendChild(b);
+});
+(function(){
+  var el = document.getElementById("f-start");
+  var d = new Date();
+  el.value = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" +
+             String(d.getDate()).padStart(2,"0");
+})();
+
 /* clip length pills */
 var durWrap = document.getElementById("durs");
 DURATIONS.forEach(function(d){
@@ -2884,7 +2934,7 @@ function fillPicker(){
 }
 
 /* copy fields */
-var FIELD_IDS = ["eyebrow","index","title","sub","note","cardBig","cardLine","pick","reviews","metaA","metaB","tags","cta","ticker"];
+var FIELD_IDS = ["eyebrow","index","title","sub","note","cardBig","cardLine","pick","reviews","metaA","metaB","tags","cta","ticker","caption"];
 FIELD_IDS.forEach(function(k){
   var el = document.getElementById("f-"+k);
   ["input","change"].forEach(function(ev){
@@ -3149,19 +3199,123 @@ document.getElementById("btnVid").addEventListener("click", function(){
 })();
 
 /* export the whole queue as a ZIP */
+/* ============================================================
+   POSTING PLAN — slots, captions and the schedule the native
+   tools are worked through with.
+   ============================================================ */
+var SLOT_TIMES = {
+  1: ["20:00"],
+  2: ["12:30", "20:00"],
+  3: ["12:30", "18:00", "21:30"]
+};
+
+function planPlatforms(){
+  var out = [];
+  if(document.getElementById("p-ig").checked) out.push("Instagram");
+  if(document.getElementById("p-fb").checked) out.push("Facebook");
+  if(document.getElementById("p-tt").checked) out.push("TikTok");
+  return out;
+}
+
+function planStartDate(){
+  var v = document.getElementById("f-start").value;
+  var d = v ? new Date(v + "T00:00:00") : new Date();
+  if(isNaN(d.getTime())) d = new Date();
+  return d;
+}
+
+function isoDate(d){
+  return d.getFullYear() + "-" +
+         String(d.getMonth()+1).padStart(2, "0") + "-" +
+         String(d.getDate()).padStart(2, "0");
+}
+
+/* a caption written from the poster, when none was typed */
+function captionFor(q){
+  var cp = q.copy || {};
+  if(String(cp.caption || "").trim()) return cp.caption.trim();
+  var head = String(cp.title || "").replace(/\*/g, "").replace(/\n/g, " ").trim();
+  var card = q.style === "sticker" ? stickerCard(cp, q.tpl) : null;
+  var body = card ? String(card.big || "").trim() : String(cp.sub || "").trim();
+  var tags = String(cp.tags || "").replace(/\*/g, "").split(",")
+              .map(function(s){ return s.trim(); }).filter(Boolean)
+              .map(function(s){ return "#" + s.replace(/[^A-Za-z0-9]+/g, "").toLowerCase(); });
+  var lines = [head];
+  if(body) lines.push(body);
+  lines.push("");
+  lines.push("Order: " + (String(cp.cta || "").match(/[a-z0-9.-]+\.[a-z.]{2,}/i) || ["hokaistore.com"])[0].toLowerCase());
+  if(tags.length) lines.push(tags.join(" ") + " #hokaistore #topup #mlbb");
+  return lines.join("\n");
+}
+
+/* slot n of the run, given posts per day */
+function slotFor(n){
+  var per = state.perDay || 1;
+  var day = Math.floor(n / per), idx = n % per;
+  var d = planStartDate();
+  d.setDate(d.getDate() + day);
+  return {date: isoDate(d), time: (SLOT_TIMES[per] || SLOT_TIMES[1])[idx]};
+}
+
+function csvCell(s){
+  s = String(s == null ? "" : s);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+/* the two text files that ride along with the posters */
+function planFiles(names){
+  var platforms = planPlatforms();
+  if(!platforms.length) platforms = ["Instagram"];
+  var rows = [["date","time","platform","file","caption"]];
+  var txt = ["HOKAISTORE — posting plan",
+             "Posts per day: " + (state.perDay || 1),
+             "First post: " + isoDate(planStartDate()),
+             "Platforms: " + platforms.join(", "),
+             "",
+             "Work through these in Meta Business Suite (Instagram + Facebook)",
+             "and TikTok Studio. Copy the caption, pick the date and time, done.",
+             "", "----------------------------------------", ""];
+
+  names.forEach(function(entry, n){
+    var slot = slotFor(n);
+    var cap = entry.caption;
+    txt.push("[" + (n+1) + "]  " + slot.date + "  " + slot.time + "   " + entry.file);
+    txt.push(platforms.join(" · "));
+    txt.push("");
+    txt.push(cap);
+    txt.push("");
+    txt.push("----------------------------------------");
+    txt.push("");
+    platforms.forEach(function(p){
+      rows.push([slot.date, slot.time, p, entry.file, cap]);
+    });
+  });
+
+  return {
+    txt: txt.join("\n"),
+    csv: rows.map(function(r){ return r.map(csvCell).join(","); }).join("\n")
+  };
+}
+
 document.getElementById("btnZip").addEventListener("click", function(){
   var btn = this;
   if(!state.queue.length) return;
   if(typeof JSZip === "undefined"){ say("ZIP library did not load — export posters one by one.","err"); return; }
   btn.disabled = true;
   var zip = new JSZip();
+  var entries = [];
   var i = 0;
   function step(){
     if(i >= state.queue.length){
       say("Packing ZIP…");
+      var plan = planFiles(entries);
+      zip.file("posting-plan.txt", plan.txt);
+      zip.file("schedule.csv", plan.csv);
       return zip.generateAsync({type:"blob", compression:"STORE"}).then(function(blob){
         return saveFile("hokaistore-posters-" + state.size + ".zip", blob);
-      }).then(function(){ say(state.queue.length + " posters saved as a ZIP.","ok"); });
+      }).then(function(){
+        say(state.queue.length + " posters, captions and a schedule saved as a ZIP.","ok");
+      });
     }
     var q = state.queue[i];
     say("Rendering " + (i+1) + " of " + state.queue.length + "…");
@@ -3170,7 +3324,9 @@ document.getElementById("btnZip").addEventListener("click", function(){
                          layout:q.layout || {}, style:q.style || "sheet",
                          bg:q.bg || "panel", fade:q.fade || 34});
     return canvasBlob(cv).then(function(blob){
-      zip.file(String(i+1).padStart(2,"0") + "-" + slug(q.copy.title) + ".png", blob);
+      var name = String(i+1).padStart(2,"0") + "-" + slug(q.copy.title) + ".png";
+      zip.file(name, blob);
+      entries.push({file:name, caption:captionFor(q)});
       i++;
       return new Promise(function(r){ setTimeout(function(){ r(step()); }, 0); });
     });
