@@ -405,6 +405,10 @@
     <div class="grp">
       <h2>Video clip</h2>
       <div class="pills" id="durs"></div>
+      <div class="toggles" id="bookendRow" style="margin-top:12px" hidden>
+        <label class="tog"><input type="checkbox" id="t-bookend" checked> Intro + outro</label>
+        <button class="btn" id="btnPlaySeq" type="button" style="padding:5px 12px;font-size:12px">Play it</button>
+      </div>
       <p class="note" id="vidNote">Records the animated poster at full size.</p>
     </div>
 
@@ -649,7 +653,7 @@ var state = {
   copy: Object.assign({}, TEMPLATES.leak.copy),
   zoom:100, panX:0, panY:0,
   motion:true, grain:true, scan:true, logo:true,
-  style:"sheet", bg:"panel", fade:34,
+  style:"sheet", bg:"panel", fade:34, bookend:true,
   layout:{}, sel:null,
   img:null, queue:[], active:-1, vidDur:6
 };
@@ -2216,6 +2220,7 @@ function star(c, cx, cy, r, color){
    PREVIEW LOOP
    ============================================================ */
 var t0 = performance.now();
+var seqStart = -1;        /* a one-shot play of the clip, bookends included */
 var needsDraw = true;
 var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -2236,8 +2241,98 @@ function sizePreview(){
   needsDraw = true;
 }
 
+/* ---------------- intro and outro ----------------
+   The wordmark, centred, as the clip's first and last beat. */
+function wordmarkCentred(c, cx, y, size, starK, starRot){
+  c.font = "800 " + size + "px Outfit, Inter, sans-serif";
+  var sp = size*0.075, a = "HOKAIST", b = "RE";
+  var wa = trackedWidth(c, a, sp), wb = trackedWidth(c, b, sp);
+  var gap = size * 1.06;
+  var x = cx - (wa + gap + wb)/2;
+  c.fillStyle = "#FFFFFF";
+  tracked(c, a, x, y, sp, "left");
+  fivePointStar(c, x + wa + gap/2, y - size*0.33, size*0.42*starK, starRot, "#A5B4FC", null);
+  tracked(c, b, x + wa + gap, y, sp, "left");
+}
+
+function bookendLengths(dur){
+  return {inn: Math.min(0.80, dur*0.17), out: Math.min(0.70, dur*0.15)};
+}
+
+function drawBookend(c, W, H, S, p, dir){
+  /* how much of the plate is covering the poster */
+  var cover = dir === "in"
+    ? (p < 0.58 ? 1 : 1 - (p - 0.58)/0.42)
+    : (p < 0.45 ? p/0.45 : 1);
+  cover = Math.max(0, Math.min(1, cover));
+  if(cover <= 0.002) return;
+
+  c.save();
+  c.globalAlpha = cover;
+  c.fillStyle = "#0A0A12";
+  c.fillRect(0, 0, W, H);
+  var g = c.createRadialGradient(W/2, H*0.47, 0, W/2, H*0.47, W*0.82);
+  g.addColorStop(0, hex2rgba(S.a, .26));
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  c.fillStyle = g;
+  c.fillRect(0, 0, W, H);
+
+  /* the wordmark settles in, its star spinning to rest */
+  var e = Math.min(1, p / (dir === "in" ? 0.55 : 0.42));
+  var ease = 1 - Math.pow(1 - e, 3);
+  var size = W * 0.082 * (0.86 + 0.14*ease);
+  var starK = 0.35 + 0.65*ease + 0.22*Math.sin(ease*Math.PI);
+  c.globalAlpha = cover * ease;
+  wordmarkCentred(c, W/2, H*0.50, size, starK, (1 - ease) * 230);
+
+  /* a few of the sheet's own stars, so the cut is not a hard change */
+  [[0.17,0.33,22,-14],[0.84,0.37,19,12],[0.26,0.68,16,8],[0.78,0.70,24,-9]]
+    .forEach(function(s, i){
+      var k = 0.5 + 0.5*Math.min(1, Math.max(0, (ease - i*0.12)/0.5));
+      fivePointStar(c, W*s[0], H*s[1], s[2]*(W/1080)*k, s[3],
+                    STICKER.stars[i % STICKER.stars.length], null);
+    });
+
+  /* the address, a beat behind the mark */
+  var tail = Math.min(1, Math.max(0, (ease - 0.45)/0.5));
+  if(tail > 0){
+    c.globalAlpha = cover * tail;
+    c.font = "500 " + Math.round(W*0.0215) + "px Outfit, Inter, sans-serif";
+    c.fillStyle = "rgba(255,255,255,.72)";
+    var t2 = "hokaistore.web.app";
+    var tw = trackedWidth(c, t2, 3.2);
+    tracked(c, t2, W/2 - tw/2, H*0.50 + W*0.062, 3.2, "left");
+  }
+  c.restore();
+}
+
+/* one frame of the clip: poster, with the bookends over it */
+function renderClipFrame(c, W, H, S, sz, elapsed, dur){
+  render(c, W, H, S, sz, elapsed);
+  if(!(state.style === "sticker" && state.bookend)) return;
+  var b = bookendLengths(dur);
+  if(elapsed < b.inn) drawBookend(c, W, H, S, elapsed / b.inn, "in");
+  else if(elapsed > dur - b.out) drawBookend(c, W, H, S, (elapsed - (dur - b.out)) / b.out, "out");
+}
+
 function frame(now){
   var t = (now - t0)/1000;
+  /* a one-shot run of the whole clip, bookends included */
+  if(seqStart >= 0){
+    var el = (now - seqStart)/1000;
+    if(el >= state.vidDur){
+      seqStart = -1;
+      needsDraw = true;
+    }else{
+      var szq = SIZES[state.size], Sq = SCHEMES[state.scheme];
+      moving = true;
+      ctx.setTransform(canvas._scale,0,0,canvas._scale,0,0);
+      ctx.clearRect(0,0,szq.w,szq.h);
+      renderClipFrame(ctx, szq.w, szq.h, Sq, szq, el, state.vidDur);
+      requestAnimationFrame(frame);
+      return;
+    }
+  }
   if(state.motion && !reduced){ needsDraw = true; }
   /* a playing video is a moving picture: keep redrawing even when the
      poster's own animation is switched off */
@@ -2369,13 +2464,13 @@ function recordVideo(dur, onProgress){
     function step(now){
       var elapsed = (now - start)/1000;
       if(elapsed >= dur){
-        render(c2, sz.w, sz.h, S, sz, dur);
+        renderClipFrame(c2, sz.w, sz.h, S, sz, dur, dur);
         onProgress(1);
         /* let the encoder take the closing frame before we stop it */
         setTimeout(function(){ if(rec.state !== "inactive") rec.stop(); }, 200);
         return;
       }
-      render(c2, sz.w, sz.h, S, sz, elapsed);
+      renderClipFrame(c2, sz.w, sz.h, S, sz, elapsed, dur);
       onProgress(elapsed/dur);
       requestAnimationFrame(step);
     }
@@ -2711,10 +2806,21 @@ function stashLook(){
   if(!q) return;
   q.layout = state.layout;
   q.style = state.style;
+  q.bookend = state.bookend;
   q.bg = state.bg;
   q.fade = state.fade;
   q.zoom = state.zoom; q.panX = state.panX; q.panY = state.panY;
 }
+
+document.getElementById("t-bookend").addEventListener("change", function(e){
+  state.bookend = e.target.checked;
+  stashLook();
+  needsDraw = true;
+});
+document.getElementById("btnPlaySeq").addEventListener("click", function(){
+  seqStart = performance.now();
+  say("Playing the clip through, intro and outro included.");
+});
 
 /* clip length pills */
 var durWrap = document.getElementById("durs");
@@ -2850,7 +2956,7 @@ function queueItem(name, url, media, isVideo, thumb){
     name: name, url: url, img: media, video: !!isVideo, thumb: thumb || url,
     copy: Object.assign({}, state.copy), tpl: state.tpl, scheme: state.scheme,
     zoom: 100, panX: 0, panY: 0,
-    layout: {}, style: state.style, bg: state.bg, fade: state.fade
+    layout: {}, style: state.style, bookend: state.bookend, bg: state.bg, fade: state.fade
   });
   if(state.active === -1) selectQueue(state.queue.length-1);
   else renderQueue();
@@ -2918,6 +3024,7 @@ function selectQueue(i){
   state.zoom = q.zoom; state.panX = q.panX; state.panY = q.panY;
   state.layout = q.layout || (q.layout = {});
   state.style = q.style || "sheet";
+  state.bookend = q.bookend !== false;
   state.bg = q.bg || "panel";
   state.fade = q.fade || 34;
   state.sel = null;
@@ -3116,6 +3223,8 @@ function syncAll(){
     if(s.k === state.style) document.getElementById("styleNote").textContent = s.note;
   });
   bgWrap.hidden = sticker;                       /* the collage is always full bleed */
+  document.getElementById("bookendRow").hidden = !sticker;
+  document.getElementById("t-bookend").checked = state.bookend !== false;
   document.getElementById("row-cardbig").hidden = !sticker;
   document.getElementById("row-cardline").hidden = !sticker;
   document.getElementById("s-fade").value = state.fade;
